@@ -23,6 +23,12 @@ android/app/build/
 # Metro cache
 .metro-health-check*
 
+# Android Studio
+.idea/
+
+# Duplicate lockfiles
+package-lock 2.json
+
 # Xcode user data
 ios/*.xcodeproj/xcuserdata/
 ios/splurge.xcworkspace/xcuserdata/
