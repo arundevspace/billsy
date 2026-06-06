@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, Switch, Alert, KeyboardAvoidingView, Platform, Modal,
+  TouchableOpacity, Switch, Alert, KeyboardAvoidingView, Platform, Modal, ToastAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -60,6 +60,14 @@ export default function AddSubscriptionScreen({ navigation, route }) {
     } else {
       await addSubscription(sub);
     }
+
+    // Show success toast
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(editing ? '✅ Subscription updated!' : '✅ Subscription added!', ToastAndroid.SHORT);
+    } else {
+      Alert.alert('', editing ? '✅ Subscription updated!' : '✅ Subscription added!', [{ text: 'OK' }], { cancelable: true });
+    }
+
     setSaving(false);
     navigation.goBack();
   };
