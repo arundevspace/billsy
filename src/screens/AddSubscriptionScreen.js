@@ -40,36 +40,39 @@ export default function AddSubscriptionScreen({ navigation, route }) {
     if (!amount || isNaN(parseFloat(amount))) return Alert.alert('Invalid Amount', 'Please enter a valid amount.');
 
     setSaving(true);
-    const sub = {
-      name: name.trim(),
-      amount: parseFloat(amount),
-      billingCycle,
-      category,
-      currency,
-      startDate,
-      isTrial,
-      trialEndDate: isTrial ? trialEndDate : null,
-      notes,
-      customIcon,
-      notifyDaysBefore: notifyDays,
-      status: 'active',
-    };
+    try {
+      const sub = {
+        name: name.trim(),
+        amount: parseFloat(amount),
+        billingCycle,
+        category,
+        currency,
+        startDate,
+        isTrial,
+        trialEndDate: isTrial ? trialEndDate : null,
+        notes,
+        customIcon,
+        notifyDaysBefore: notifyDays,
+        status: 'active',
+      };
 
-    if (editing) {
-      await updateSubscription(editing.id, sub);
-    } else {
-      await addSubscription(sub);
+      if (editing) {
+        await updateSubscription(editing.id, sub);
+      } else {
+        await addSubscription(sub);
+      }
+
+      // Navigate first, then show toast so nothing blocks
+      navigation.goBack();
+
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(editing ? 'Subscription updated!' : 'Subscription added!', ToastAndroid.SHORT);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not save subscription. Please try again.');
+    } finally {
+      setSaving(false);
     }
-
-    // Show success toast
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(editing ? '✅ Subscription updated!' : '✅ Subscription added!', ToastAndroid.SHORT);
-    } else {
-      Alert.alert('', editing ? '✅ Subscription updated!' : '✅ Subscription added!', [{ text: 'OK' }], { cancelable: true });
-    }
-
-    setSaving(false);
-    navigation.goBack();
   };
 
   const pickService = (service) => {
