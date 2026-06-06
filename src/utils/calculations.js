@@ -67,15 +67,17 @@ export const getTotalsByCurrency = (subscriptions) => {
   return Object.values(map);
 };
 
+// Returns { currency: { categoryId: amount } } — grouped by currency so bars are never mixed
 export const getMonthlyByCategory = (subscriptions) => {
-  const map = {};
+  const byCurrency = {};
   subscriptions
     .filter(s => s.status === 'active')
     .forEach(s => {
-      const key = s.category;
-      map[key] = (map[key] || 0) + toMonthly(s.amount, s.billingCycle);
+      const cur = s.currency || 'USD';
+      if (!byCurrency[cur]) byCurrency[cur] = {};
+      byCurrency[cur][s.category] = (byCurrency[cur][s.category] || 0) + toMonthly(s.amount, s.billingCycle);
     });
-  return map;
+  return byCurrency;
 };
 
 export const getUpcomingRenewals = (subscriptions, days = 7) =>

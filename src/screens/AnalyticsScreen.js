@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSubscriptionStore } from '../store/subscriptionStore';
 import {
   getTotalMonthly, getTotalYearly, getMonthlyByCategory,
-  getSpendingTrend, formatCurrency,
+  getSpendingTrend, formatCurrency, getTotalsByCurrency,
 } from '../utils/calculations';
 import { getCategoryById } from '../constants/categories';
 import { colors, spacing, radius, typography } from '../constants/theme';
@@ -67,7 +67,8 @@ export default function AnalyticsScreen() {
   const totalMonthly = getTotalMonthly(subscriptions);
   const totalYearly  = getTotalYearly(subscriptions);
   const trend        = getSpendingTrend(subscriptions);
-  const byCategory   = getMonthlyByCategory(subscriptions);
+  const byCurrency   = getMonthlyByCategory(subscriptions); // { currency: { catId: amount } }
+  const currencyTotals = getTotalsByCurrency(subscriptions); // [{currency, monthly, yearly}]
 
   const activeCount  = subscriptions.filter(s => s.status === 'active').length;
   const trialCount   = subscriptions.filter(s => s.isTrial).length;
@@ -76,9 +77,6 @@ export default function AnalyticsScreen() {
     .filter(s => s.unused && s.status === 'active')
     .reduce((sum, s) => sum + getTotalMonthly([s]), 0);
 
-  const categoryEntries = Object.entries(byCategory)
-    .map(([id, amount]) => ({ ...getCategoryById(id), amount }))
-    .sort((a, b) => b.amount - a.amount);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -123,21 +121,34 @@ export default function AnalyticsScreen() {
             : <Text style={styles.empty}>Add subscriptions to see trend</Text>}
         </View>
 
-        {/* Category Breakdown */}
+        {/* Category Breakdown — one section per currency */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Spend by Category</Text>
-          {categoryEntries.length === 0
+          {Object.keys(byCurrency).length === 0
             ? <Text style={styles.empty}>No data yet</Text>
-            : categoryEntries.map(cat => (
-                <CategoryBar
-                  key={cat.id}
-                  label={`${cat.icon} ${cat.label}`}
-                  amount={cat.amount}
-                  total={totalMonthly}
-                  color={cat.color}
-                  currency={currency}
-                />
-              ))}
+            : Object.entries(byCurrency).map(([cur, catMap]) => {
+                const curTotal = currencyTotals.find(c => c.currency === cur)?.monthly || 0;
+                const entries = Object.entries(catMap)
+                  .map(([id, amount]) => ({ ...getCategoryById(id), amount }))
+                  .sort((a, b) => b.amount - a.amount);
+                return (
+                  <View key={cur}>
+                    {Object.keys(byCurrency).length > 1 && (
+                      <Text style={styles.currencyHeader}>{cur}</Text>
+                    )}
+                    {entries.map(cat => (
+                      <CategoryBar
+                        key={`${cur}-${cat.id}`}
+                        label={`${cat.icon} ${cat.label}`}
+                        amount={cat.amount}
+                        total={curTotal}
+                        color={cat.color}
+                        currency={cur}
+                      />
+                    ))}
+                  </View>
+                );
+              })}
         </View>
 
         {/* Top subscriptions */}
@@ -208,6 +219,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
   empty: { textAlign: 'center', color: colors.textLight, paddingVertical: spacing.xl },
+  currencyHeader: { fontSize: 11, fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: spacing.sm, marginBottom: 4 },
 
   topRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
