@@ -34,9 +34,14 @@ export const useSubscriptionStore = create((set, get) => ({
     const updated = [...get().subscriptions, newSub];
     set({ subscriptions: updated });
     await persist(updated);
-    if (newSub.status === 'active') {
-      await scheduleRenewalNotification(newSub);
-      if (newSub.isTrial) await scheduleTrialEndNotification(newSub);
+    // Notifications are best-effort — don't let failure block saving
+    try {
+      if (newSub.status === 'active') {
+        await scheduleRenewalNotification(newSub);
+        if (newSub.isTrial) await scheduleTrialEndNotification(newSub);
+      }
+    } catch (e) {
+      console.warn('Notification scheduling failed:', e);
     }
     return newSub;
   },
@@ -47,10 +52,15 @@ export const useSubscriptionStore = create((set, get) => ({
     );
     set({ subscriptions: updated });
     await persist(updated);
-    const sub = updated.find(s => s.id === id);
-    if (sub) {
-      await cancelNotificationsForSubscription(id);
-      if (sub.status === 'active') await scheduleRenewalNotification(sub);
+    // Notifications are best-effort — don't let failure block saving
+    try {
+      const sub = updated.find(s => s.id === id);
+      if (sub) {
+        await cancelNotificationsForSubscription(id);
+        if (sub.status === 'active') await scheduleRenewalNotification(sub);
+      }
+    } catch (e) {
+      console.warn('Notification scheduling failed:', e);
     }
   },
 
