@@ -60,7 +60,8 @@ export default function AddSubscriptionScreen({ navigation, route }) {
     } else {
       await addSubscription(sub);
     }
-    navigation.navigate('Dashboard');
+    setSaving(false);
+    navigation.goBack();
   };
 
   const pickService = (service) => {
